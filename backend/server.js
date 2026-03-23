@@ -48,20 +48,25 @@ app.post("/players", upload.single("image"), async (req, res) => {
 
 // ===== FA SCRAPER =====
 async function getLastMatch(url) {
-  const { data } = await axios.get(url);
-  const $ = cheerio.load(data);
+  try {
+    const { data } = await axios.get(url, { timeout: 5000 });
+    const $ = cheerio.load(data);
 
-  let match = null;
+    let match = null;
 
-  $("tr").each((i, el) => {
-    const text = $(el).text();
-    if (text.includes("Korona Redbridge") && text.match(/\d+-\d+/)) {
-      match = text.trim();
-      return false;
-    }
-  });
+    $("tr").each((i, el) => {
+      const text = $(el).text();
 
-  return match;
+      if (text.includes("Korona Redbridge") && text.match(/\d+-\d+/)) {
+        match = text.trim();
+        return false;
+      }
+    });
+
+    return match || "Brak danych";
+  } catch (err) {
+    return "Brak danych (błąd FA)";
+  }
 }
 
 app.get("/last-match/35", async (req, res) => {
@@ -75,3 +80,7 @@ app.get("/last-match/45", async (req, res) => {
 });
 
 app.listen(5000, () => console.log("Server działa"));
+
+app.get("/", (req, res) => {
+  res.send("API działa");
+});
