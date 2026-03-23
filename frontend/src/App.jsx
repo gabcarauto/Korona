@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const API = "https://TWOJ-BACKEND.onrender.com";
+const API = "https://korona-redbridge.onrender.com";
 
 export default function App() {
   const [players, setPlayers] = useState([]);
