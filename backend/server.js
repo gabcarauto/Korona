@@ -13,6 +13,10 @@ app.use("/uploads", express.static("uploads"));
 
 // ===== DATABASE =====
 mongoose.connect(process.env.MONGO_URL)
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => {
+    console.error("Mongo error:", err);
+  });
   .then(() => console.log("MongoDB connected"));
 
 // ===== MODELS =====
@@ -33,17 +37,12 @@ const upload = multer({ storage });
 
 // ===== PLAYERS =====
 app.get("/players", async (req, res) => {
-  res.json(await Player.find());
-});
-
-app.post("/players", upload.single("image"), async (req, res) => {
-  const player = new Player({
-    name: req.body.name,
-    position: req.body.position,
-    image: req.file.path
-  });
-  await player.save();
-  res.json(player);
+  try {
+    const players = await Player.find();
+    res.json(players);
+  } catch (err) {
+    res.json([]);
+  }
 });
 
 // ===== FA SCRAPER =====
@@ -56,7 +55,6 @@ async function getLastMatch(url) {
 
     $("tr").each((i, el) => {
       const text = $(el).text();
-
       if (text.includes("Korona Redbridge") && text.match(/\d+-\d+/)) {
         match = text.trim();
         return false;
@@ -65,7 +63,8 @@ async function getLastMatch(url) {
 
     return match || "Brak danych";
   } catch (err) {
-    return "Brak danych (błąd FA)";
+    console.error("FA error:", err.message);
+    return "Brak danych";
   }
 }
 
@@ -84,3 +83,6 @@ app.listen(5000, () => console.log("Server działa"));
 app.get("/", (req, res) => {
   res.send("API działa");
 });
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log("Server działa"));
