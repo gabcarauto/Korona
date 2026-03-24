@@ -27,7 +27,7 @@ export default function App() {
       .catch(() => {
         setM35("Brak danych");
         setM45("Brak danych");
-        setError("Nie udało się pobrać danych z API");
+        setError("Nie udało się pobrać danych");
       });
   }, []);
 
@@ -35,7 +35,7 @@ export default function App() {
     <div style={styles.page}>
       <h1 style={styles.title}>Korona Redbridge</h1>
 
-      {error ? <p style={styles.error}>{error}</p> : null}
+      {error && <p style={styles.error}>{error}</p>}
 
       <div style={styles.matchesWrapper}>
         <div style={styles.card}>
@@ -57,7 +57,7 @@ export default function App() {
         ) : (
           players.map((p, i) => (
             <div key={i} style={styles.playerCard}>
-              {p?.image ? (
+              {p?.image && (
                 <img
                   src={API + "/" + p.image}
                   alt={p?.name || "Zawodnik"}
@@ -66,7 +66,7 @@ export default function App() {
                     e.currentTarget.style.display = "none";
                   }}
                 />
-              ) : null}
+              )}
 
               <div>
                 <strong>{p?.name || "Brak nazwy"}</strong>
@@ -108,8 +108,7 @@ const styles = {
     background: "#1a1a1a",
     padding: "20px",
     borderRadius: "10px",
-    width: "300px",
-    boxShadow: "0 0 10px rgba(255,0,0,0.3)"
+    width: "300px"
   },
   cardTitle: {
     color: "#ff2a2a"
@@ -140,4 +139,3 @@ const styles = {
     borderRadius: "50%"
   }
 };
-
