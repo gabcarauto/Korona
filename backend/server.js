@@ -1,8 +1,3 @@
-let cache = {
-  "35": null,
-  "45": null,
-  lastUpdate: 0
-};
 const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
@@ -11,6 +6,8 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 
 const app = express();
+
+// ===== MIDDLEWARE =====
 app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
@@ -18,12 +15,9 @@ app.use("/uploads", express.static("uploads"));
 // ===== DATABASE =====
 mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log("MongoDB connected"))
-  .catch(err => {
-    console.error("Mongo error:", err);
-  });
-  .then(() => console.log("MongoDB connected"));
+  .catch(err => console.error("Mongo error:", err));
 
-// ===== MODELS =====
+// ===== MODEL =====
 const Player = mongoose.model("Player", {
   name: String,
   position: String,
@@ -39,7 +33,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ===== PLAYERS =====
+// ===== API: PLAYERS =====
 app.get("/players", async (req, res) => {
   try {
     const players = await Player.find();
@@ -49,22 +43,33 @@ app.get("/players", async (req, res) => {
   }
 });
 
-app.get("/matches", (req, res) => {
-  res.json({
-    veterans35: cache["35"] || "Ładowanie...",
-    veterans45: cache["45"] || "Ładowanie...",
-    updated: cache.lastUpdate
-  });
+app.post("/players", upload.single("image"), async (req, res) => {
+  try {
+    const player = new Player({
+      name: req.body.name,
+      position: req.body.position,
+      image: req.file?.path
+    });
+    await player.save();
+    res.json(player);
+  } catch (err) {
+    res.status(500).json({ error: "Błąd zapisu zawodnika" });
+  }
 });
 
-// ===== FA SCRAPER =====
+// ===== CACHE =====
+let cache = {
+  veterans35: "Ładowanie...",
+  veterans45: "Ładowanie...",
+  lastUpdate: null
+};
+
+// ===== SCRAPER =====
 async function getLastMatch(url) {
   try {
     const { data } = await axios.get(url, {
       timeout: 5000,
-      headers: {
-        "User-Agent": "Mozilla/5.0"
-      }
+      headers: { "User-Agent": "Mozilla/5.0" }
     });
 
     const $ = cheerio.load(data);
@@ -86,32 +91,48 @@ async function getLastMatch(url) {
   }
 }
 
-app.get("/last-match/35", async (req, res) => {
-  const match = await getLastMatch("https://fulltime.thefa.com/fixtures.html?divisionseason=430198049");
-  res.json({ match });
-});
-
-app.get("/last-match/45", async (req, res) => {
-  const match = await getLastMatch("https://fulltime.thefa.com/fixtures.html?divisionseason=524351727");
-  res.json({ match });
-});
-
+// ===== CACHE UPDATE =====
 async function updateCache() {
-  console.log("Odświeżam dane FA...");
+  try {
+    console.log("Odświeżam dane FA...");
 
-  cache["35"] = await getLastMatch("https://fulltime.thefa.com/fixtures.html?divisionseason=430198049");
-  cache["45"] = await getLastMatch("https://fulltime.thefa.com/fixtures.html?divisionseason=524351727");
-  cache.lastUpdate = Date.now();
+    cache.veterans35 = await getLastMatch(
+      "https://fulltime.thefa.com/fixtures.html?divisionseason=430198049"
+    );
+
+    cache.veterans45 = await getLastMatch(
+      "https://fulltime.thefa.com/fixtures.html?divisionseason=524351727"
+    );
+
+    cache.lastUpdate = new Date().toISOString();
+
+    console.log("Cache OK");
+  } catch (err) {
+    console.error("CACHE ERROR:", err.message);
+  }
 }
 
-setInterval(updateCache, 1000 * 60 * 30);
+// start cache
 updateCache();
+setInterval(updateCache, 1000 * 60 * 30); // co 30 min
 
-app.listen(5000, () => console.log("Server działa"));
+// ===== API: MATCHES =====
+app.get("/matches", (req, res) => {
+  res.json({
+    veterans35: cache.veterans35,
+    veterans45: cache.veterans45,
+    updated: cache.lastUpdate
+  });
+});
 
+// ===== TEST ROOT =====
 app.get("/", (req, res) => {
   res.send("API działa");
 });
 
+// ===== START SERVER =====
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log("Server działa"));
+
+app.listen(PORT, () => {
+  console.log("Server działa na porcie " + PORT);
+});
