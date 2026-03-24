@@ -6,76 +6,80 @@ export default function App() {
   const [players, setPlayers] = useState([]);
   const [m35, setM35] = useState("Ładowanie...");
   const [m45, setM45] = useState("Ładowanie...");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    // players
     fetch(API + "/players")
-      .then(res => res.json())
-      .then(data => setPlayers(data))
-      .catch(() => setPlayers([]));
+      .then(async (res) => {
+        const data = await res.json();
+        setPlayers(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        setPlayers([]);
+      });
 
-    // matches (cache)
     fetch(API + "/matches")
-      .then(res => res.json())
-      .then(data => {
-        setM35(data.veterans35);
-        setM45(data.veterans45);
+      .then(async (res) => {
+        const data = await res.json();
+        setM35(data?.veterans35 || "Brak danych");
+        setM45(data?.veterans45 || "Brak danych");
       })
       .catch(() => {
         setM35("Brak danych");
         setM45("Brak danych");
+        setError("Nie udało się pobrać danych z API");
       });
   }, []);
 
   return (
     <div style={styles.page}>
-      
-      {/* HEADER */}
       <h1 style={styles.title}>Korona Redbridge</h1>
 
-      {/* MATCHES */}
+      {error ? <p style={styles.error}>{error}</p> : null}
+
       <div style={styles.matchesWrapper}>
-        
-        {/* +35 */}
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>Veterans +35</h2>
           <p>{m35}</p>
         </div>
 
-        {/* +45 */}
         <div style={styles.card}>
           <h2 style={styles.cardTitle}>Veterans +45</h2>
           <p>{m45}</p>
         </div>
-
       </div>
 
-      {/* PLAYERS */}
       <h2 style={styles.section}>Skład drużyny</h2>
 
       <div style={styles.playersGrid}>
-        {players.length === 0 && <p>Brak zawodników</p>}
+        {players.length === 0 ? (
+          <p>Brak zawodników</p>
+        ) : (
+          players.map((p, i) => (
+            <div key={i} style={styles.playerCard}>
+              {p?.image ? (
+                <img
+                  src={API + "/" + p.image}
+                  alt={p?.name || "Zawodnik"}
+                  style={styles.playerImg}
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : null}
 
-        {players.map((p, i) => (
-          <div key={i} style={styles.playerCard}>
-            <img
-              src={API + "/" + p.image}
-              alt={p.name}
-              style={styles.playerImg}
-            />
-            <div>
-              <strong>{p.name}</strong>
-              <p>{p.position}</p>
+              <div>
+                <strong>{p?.name || "Brak nazwy"}</strong>
+                <p>{p?.position || "Brak pozycji"}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
-
     </div>
   );
 }
 
-// ===== STYLES =====
 const styles = {
   page: {
     background: "#0b0b0b",
@@ -88,6 +92,11 @@ const styles = {
     color: "#e10600",
     textAlign: "center",
     marginBottom: "30px"
+  },
+  error: {
+    color: "#ff8080",
+    textAlign: "center",
+    marginBottom: "20px"
   },
   matchesWrapper: {
     display: "flex",
