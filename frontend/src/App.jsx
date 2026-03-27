@@ -32,53 +32,16 @@ export default function App() {
   }, []);
 
   return (
-    <div style={styles.page}>
-      <h1 style={styles.title}>Korona Redbridge</h1>
+  <div style={{ background: "black", color: "white", minHeight: "100vh", padding: 20 }}>
+    <h1>TEST KORONA</h1>
 
-      {error && <p style={styles.error}>{error}</p>}
+    <p>m35: {String(m35)}</p>
+    <p>m45: {String(m45)}</p>
 
-      <div style={styles.matchesWrapper}>
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Veterans +35</h2>
-          <p>{m35}</p>
-        </div>
-
-        <div style={styles.card}>
-          <h2 style={styles.cardTitle}>Veterans +45</h2>
-          <p>{m45}</p>
-        </div>
-      </div>
-
-      <h2 style={styles.section}>Skład drużyny</h2>
-
-      <div style={styles.playersGrid}>
-        {players.length === 0 ? (
-          <p>Brak zawodników</p>
-        ) : (
-          players.map((p, i) => (
-            <div key={i} style={styles.playerCard}>
-              {p?.image && (
-                <img
-                  src={API + "/" + p.image}
-                  alt={p?.name || "Zawodnik"}
-                  style={styles.playerImg}
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-              )}
-
-              <div>
-                <strong>{p?.name || "Brak nazwy"}</strong>
-                <p>{p?.position || "Brak pozycji"}</p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
+    <p>players: {Array.isArray(players) ? players.length : "not array"}</p>
+    <p>error: {error || "brak"}</p>
+  </div>
+);
 
 const styles = {
   page: {
